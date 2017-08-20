@@ -2,9 +2,11 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 )
 
@@ -16,9 +18,11 @@ type GuessTree struct {
 }
 
 var guessTree GuessTree
+var usingLocal = false
+
+const jsonURL = "https://api.myjson.com/bins/a9101"
 
 func main() {
-	loadGuessTree()
 	startGuessing()
 }
 
@@ -36,21 +40,35 @@ func getInput() string {
 }
 
 func loadGuessTree() {
-	treeData, err := ioutil.ReadFile("tree.json")
+	treeData, err := getJSONData(jsonURL)
 	if err != nil {
-		guessTree = createDefaultGuessTree()
-		saveGuessTree()
-	} else {
-		err := json.Unmarshal(treeData, &guessTree)
+		// We may not have internet, fall back to local copy
+		treeData, err = ioutil.ReadFile("tree.json")
+		usingLocal = true // Keep track of local copy usage, just so we don't overwrite global state
 		if err != nil {
-			fmt.Println("Oops, I think my memory is gone.")
+			// No local copy, create one
 			guessTree = createDefaultGuessTree()
 			saveGuessTree()
 		}
+	} else {
+		usingLocal = false
 	}
+
+	err = json.Unmarshal(treeData, &guessTree)
+	if err != nil {
+		// Malformed JSON, fall back to local copy
+		fmt.Println("Oops, I think my memory is gone.")
+		guessTree = createDefaultGuessTree()
+		saveGuessTree()
+	}
+
 }
 
 func saveGuessTree() {
+	if !usingLocal {
+		putJSONData(jsonURL, guessTree)
+	}
+
 	jsonData, err := json.Marshal(guessTree)
 	assertError(err)
 	err = ioutil.WriteFile("tree.json", []byte(jsonData), 0644)
@@ -134,6 +152,7 @@ func startGuessing() {
 	playAgain := true
 	correctGuesses := 0
 	for playAgain {
+		loadGuessTree()
 		won := guess()
 		if won {
 			correctGuesses++
@@ -155,4 +174,47 @@ func startGuessing() {
 func prettyPrint(v interface{}) {
 	b, _ := json.MarshalIndent(v, "", "  ")
 	println(string(b))
+}
+
+func getJSONData(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
+}
+
+func postJSONData(url string, data interface{}) {
+	jsonData, err := json.Marshal(data)
+	assertError(err)
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	assertError(err)
+
+	defer resp.Body.Close()
+}
+
+func putJSONData(url string, data interface{}) {
+	jsonData, err := json.Marshal(data)
+	assertError(err)
+
+	client := &http.Client{}
+
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
+	assertError(err)
+
+	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
+
+	resp, err := client.Do(req)
+	assertError(err)
+
+	defer resp.Body.Close()
 }
