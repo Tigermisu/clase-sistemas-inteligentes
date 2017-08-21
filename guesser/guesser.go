@@ -1,15 +1,13 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
+	"clase-sistemas-inteligentes/utilities"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
-	"os"
 )
 
+// A GuessTree is a binary tree that also contains an attribute to identify it as a question or not
 type GuessTree struct {
 	Left       *GuessTree
 	Value      string
@@ -26,21 +24,8 @@ func main() {
 	startGuessing()
 }
 
-func assertError(e error) {
-	if e != nil {
-		fmt.Println("Error!\n", e)
-		panic(e)
-	}
-}
-
-func getInput() string {
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
-	return scanner.Text()
-}
-
 func loadGuessTree() {
-	treeData, err := getJSONData(jsonURL)
+	treeData, err := utilities.GetData(jsonURL)
 	if err != nil {
 		// We may not have internet, fall back to local copy
 		treeData, err = ioutil.ReadFile("tree.json")
@@ -66,13 +51,13 @@ func loadGuessTree() {
 
 func saveGuessTree() {
 	if !usingLocal {
-		putJSONData(jsonURL, guessTree)
+		utilities.PutJSONData(jsonURL, guessTree)
 	}
 
 	jsonData, err := json.Marshal(guessTree)
-	assertError(err)
+	utilities.AssertError(err)
 	err = ioutil.WriteFile("tree.json", []byte(jsonData), 0644)
-	assertError(err)
+	utilities.AssertError(err)
 }
 
 func createDefaultGuessTree() GuessTree {
@@ -92,7 +77,7 @@ func askForYesOrNo(longPrompt bool) bool {
 		} else {
 			fmt.Print("(y/n): ")
 		}
-		answer := getInput()
+		answer := utilities.GetConsoleInput()
 		if answer != "y" && answer != "n" {
 			fmt.Print("Sorry, invalid response. ")
 		} else {
@@ -121,9 +106,9 @@ func guess() bool {
 			}
 
 			fmt.Print("Aww, bummer. Can you please tell me the name of your animal?\nEnter name: ")
-			name := getInput()
+			name := utilities.GetConsoleInput()
 			fmt.Printf("Okay, can you please now tell me one distinctive characteristic of this animal? (ie. 'has blue feathers', 'runs very fast', 'flies for long periods of time'...)\nEnter characteristic: ")
-			characteristic := getInput()
+			characteristic := utilities.GetConsoleInput()
 			addNewGuessOption(currentNode, name, characteristic)
 			fmt.Printf("Alright, I'll remember that one for the next time.")
 			return false
@@ -169,52 +154,4 @@ func startGuessing() {
 	} else {
 		fmt.Println("Fine, I'll get my own chocolates.")
 	}
-}
-
-func prettyPrint(v interface{}) {
-	b, _ := json.MarshalIndent(v, "", "  ")
-	println(string(b))
-}
-
-func getJSONData(url string) ([]byte, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return body, nil
-}
-
-func postJSONData(url string, data interface{}) {
-	jsonData, err := json.Marshal(data)
-	assertError(err)
-
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	assertError(err)
-
-	defer resp.Body.Close()
-}
-
-func putJSONData(url string, data interface{}) {
-	jsonData, err := json.Marshal(data)
-	assertError(err)
-
-	client := &http.Client{}
-
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
-	assertError(err)
-
-	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
-
-	resp, err := client.Do(req)
-	assertError(err)
-
-	defer resp.Body.Close()
 }
