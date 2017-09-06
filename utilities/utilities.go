@@ -28,7 +28,7 @@ func GetConsoleInput() string {
 // PrettyPrint formats a variable as an indented JSON and prints it
 func PrettyPrint(v interface{}) {
 	b, _ := json.MarshalIndent(v, "", "  ")
-	println(string(b))
+	fmt.Println(string(b))
 }
 
 // GetData requests an HTTP URL for arbitrary data and returns the response's body

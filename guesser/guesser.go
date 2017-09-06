@@ -63,7 +63,7 @@ func saveGuessTree() {
 func createDefaultGuessTree() GuessTree {
 	var newTree GuessTree
 	newTree.IsQuestion = true
-	newTree.Value = "eats meat?"
+	newTree.Value = "eats meat"
 	newTree.Left = &GuessTree{nil, "Cow", nil, false}
 	newTree.Right = &GuessTree{nil, "T-Rex", nil, false}
 
@@ -130,12 +130,16 @@ func startGuessing() {
 	fmt.Println("The game is simple. You think of an animal. I ask a series of yes/no questions to try and guess it.")
 	fmt.Println("If I fail to guess it, you win! But if I guess it, you owe me a chocolate.")
 	fmt.Println("Are you ready?")
+
 	for !askForYesOrNo(true) {
 		fmt.Println("Oh, come on! I'll ask again.")
 	}
+
 	fmt.Println("\nGreat! Let's begin!")
+
 	playAgain := true
 	correctGuesses := 0
+
 	for playAgain {
 		loadGuessTree()
 		won := guess()
@@ -145,6 +149,7 @@ func startGuessing() {
 		fmt.Print("\n\nDo you want to play another round? ")
 		playAgain = askForYesOrNo(false)
 	}
+
 	if correctGuesses > 0 {
 		if correctGuesses == 1 {
 			fmt.Printf("Okay, just remember, you owe me %d chocolate ;)", correctGuesses)
