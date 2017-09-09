@@ -8,12 +8,14 @@ import (
 	"time"
 )
 
-var distances = [5][5]float64{
-	{0, 1802, 1180, 880, 1460},  // Chihuahua
-	{1792, 0, 1829, 1339, 418},  // Veracruz
-	{1244, 1835, 0, 1745, 1820}, // Dallas
-	{879, 1392, 1845, 0, 1019},  // Mazatlan
-	{1424, 395, 1809, 1022, 0},  // CDMX
+var distances = [7][7]float64{
+	{0, 1802, 1180, 880, 1460, 1394, 809},   // Chihuahua
+	{1792, 0, 1829, 1339, 418, 2897, 999},   // Veracruz
+	{1244, 1835, 0, 1745, 1820, 1274, 918},  // Dallas
+	{879, 1392, 1845, 0, 1019, 2462, 842},   // Mazatlan
+	{1424, 395, 1809, 1022, 0, 27476, 910},  // CDMX
+	{1407, 2894, 1285, 2350, 2746, 0, 1913}, // Denver
+	{804, 999, 915, 839, 913, 1913, 0},      // Monterrey
 }
 
 func main() {
@@ -21,14 +23,14 @@ func main() {
 
 	iterations := 0
 
-	cities := generateInitialCities(500)
+	cities := generateInitialCities(200)
 
-	distanceFunction := func(order [4]int) float64 {
+	distanceFunction := func(order [6]int) float64 {
 		distance := distances[0][order[0]]
-		for i := 0; i < 3; i++ {
+		for i := 0; i < len(order)-1; i++ {
 			distance += distances[order[i]][order[i+1]]
 		}
-		return 1000000 / (distance + distances[order[3]][0])
+		return 1000000 / (distance + distances[order[len(order)-1]][0])
 	}
 
 	aptitudes := calculatePathAptitude(cities, distanceFunction)
@@ -48,7 +50,7 @@ func main() {
 
 		newAvg := calculateAverageAptitude(aptitudes)
 
-		if math.Abs(newAvg-oldAvg) < 1 {
+		if math.Abs(newAvg-oldAvg) < 0.5 {
 			hits++
 			if hits > 9 {
 				break
@@ -64,14 +66,16 @@ func main() {
 
 	average := calculateAverageAptitude(aptitudes)
 
-	fmt.Printf("Average aptitude: %f\n, Iterations: %d\n\n", average, iterations)
+	//fmt.Println(cities)
+
+	fmt.Printf("Average aptitude: %f, Iterations: %d\n", average, iterations)
 
 	printBestCity(cities, distanceFunction)
 
 }
 
-func printBestCity(cities [][4]int, function func([4]int) float64) {
-	var bestCity = [4]int{}
+func printBestCity(cities [][6]int, function func([6]int) float64) {
+	var bestCity = [6]int{}
 	maxAptitude := 0.0
 
 	for i := 0; i < len(cities); i++ {
@@ -86,13 +90,13 @@ func printBestCity(cities [][4]int, function func([4]int) float64) {
 	fmt.Print(bestCity)
 	fmt.Printf(" %f", maxAptitude)
 }
-func generateInitialCities(popSize int) [][4]int {
-	population := make([][4]int, popSize)
+func generateInitialCities(popSize int) [][6]int {
+	population := make([][6]int, popSize)
 
 	for i := 0; i < popSize; i++ {
-		cities := [4]int{1, 2, 3, 4}
-		randomCities := [4]int{}
-		permutation := rand.Perm(4)
+		cities := [6]int{1, 2, 3, 4, 5, 6}
+		randomCities := [6]int{}
+		permutation := rand.Perm(6)
 
 		for i, v := range permutation {
 			randomCities[v] = cities[i]
@@ -124,7 +128,7 @@ func generateRandomString(length int) string {
 	return str
 }
 
-func calculatePathAptitude(cities [][4]int, function func([4]int) float64) []float64 {
+func calculatePathAptitude(cities [][6]int, function func([6]int) float64) []float64 {
 	aptitude := make([]float64, len(cities))
 
 	for i := 0; i < len(aptitude); i++ {
@@ -144,11 +148,11 @@ func calculateAptitude(population []string, function func(individual string) flo
 	return aptitude
 }
 
-func generateNewPath(population [][4]int, aptitudes []float64) [][4]int {
-	aptitudeSum := float64(0)
-	parents := make([][4]int, len(population))
-	couples := make([][4]int, len(population))
-	children := make([][4]int, len(population))
+func generateNewPath(population [][6]int, aptitudes []float64) [][6]int {
+	aptitudeSum := 0.0
+	parents := make([][6]int, len(population))
+	couples := make([][6]int, len(population))
+	children := make([][6]int, len(population))
 	permutation := rand.Perm(len(population))
 
 	for _, aptitude := range aptitudes {
@@ -158,7 +162,7 @@ func generateNewPath(population [][4]int, aptitudes []float64) [][4]int {
 	// Choose parents
 	for i := 0; i < len(population); i++ {
 		rouletteNumber := rand.Float64() * aptitudeSum
-		runningSum := float64(0)
+		runningSum := 0.0
 
 		for j := 0; j < len(aptitudes); j++ {
 			runningSum += aptitudes[j]
@@ -173,10 +177,11 @@ func generateNewPath(population [][4]int, aptitudes []float64) [][4]int {
 	for i, v := range permutation {
 		couples[v] = parents[i]
 	}
+
 	// Make offspring
 	for i := 0; i < len(couples); i += 2 {
 		crossPoint := rand.Intn(len(couples[i]) - 1)
-		coupleChildren := [2][4]int{}
+		coupleChildren := [2][6]int{}
 
 		for j := 0; j < len(couples[i]); j++ {
 			if j <= crossPoint {
@@ -212,7 +217,7 @@ func generateNewPath(population [][4]int, aptitudes []float64) [][4]int {
 	return children
 }
 
-func contains(array [4]int, value int) bool {
+func contains(array [6]int, value int) bool {
 	for i := 0; i < len(array); i++ {
 		if array[i] == value {
 			return true
@@ -221,7 +226,7 @@ func contains(array [4]int, value int) bool {
 	return false
 }
 
-func swapRandom(arr [4]int) [4]int {
+func swapRandom(arr [6]int) [6]int {
 	permutation := rand.Perm(4)
 
 	a := arr[permutation[0]]
@@ -232,7 +237,7 @@ func swapRandom(arr [4]int) [4]int {
 }
 
 func generateOffspring(population []string, aptitudes []float64) []string {
-	aptitudeSum := float64(0)
+	aptitudeSum := 0.0
 	parents := make([]string, len(population))
 	couples := make([]string, len(population))
 	children := make([]string, len(population))
@@ -245,7 +250,7 @@ func generateOffspring(population []string, aptitudes []float64) []string {
 	// Choose parents
 	for i := 0; i < len(population); i++ {
 		rouletteNumber := rand.Float64() * aptitudeSum
-		runningSum := float64(0)
+		runningSum := 0.0
 
 		for j := 0; j < len(aptitudes); j++ {
 			runningSum += aptitudes[j]
@@ -299,7 +304,7 @@ func replaceAtIndex(str string, replacement rune, index int) string {
 }
 
 func calculateAverageAptitude(aptitudes []float64) float64 {
-	aptitudeSum := float64(0)
+	aptitudeSum := 0.0
 
 	for _, aptitude := range aptitudes {
 		aptitudeSum += aptitude
