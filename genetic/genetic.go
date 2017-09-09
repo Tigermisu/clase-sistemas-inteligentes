@@ -1,7 +1,6 @@
 package main
 
 import (
-	"clase-sistemas-inteligentes/utilities"
 	"fmt"
 	"math"
 	"math/rand"
@@ -22,14 +21,14 @@ func main() {
 
 	iterations := 0
 
-	cities := generateInitialCities(6)
+	cities := generateInitialCities(500)
 
 	distanceFunction := func(order [4]int) float64 {
 		distance := distances[0][order[0]]
 		for i := 0; i < 3; i++ {
 			distance += distances[order[i]][order[i+1]]
 		}
-		return distance + distances[order[3]][0]
+		return 1000000 / (distance + distances[order[3]][0])
 	}
 
 	aptitudes := calculatePathAptitude(cities, distanceFunction)
@@ -38,7 +37,7 @@ func main() {
 
 	hits := 0
 
-	for iterations < 500000 {
+	for {
 		iterations++
 
 		aptitudes := calculatePathAptitude(cities, distanceFunction)
@@ -49,7 +48,7 @@ func main() {
 
 		newAvg := calculateAverageAptitude(aptitudes)
 
-		if math.Abs(newAvg-oldAvg) < 10 {
+		if math.Abs(newAvg-oldAvg) < 1 {
 			hits++
 			if hits > 9 {
 				break
@@ -61,48 +60,32 @@ func main() {
 
 	}
 
-	/*
-
-		function := func(genotipe string) float64 {
-			value, _ := strconv.ParseUint(genotipe, 2, 0)
-			if value >= 127 {
-				value = 255 - value
-			}
-			return float64(value * 2)
-		}
-
-		population := generateInitialPopulation(20, 8)
-
-		aptitudes := calculateAptitude(population, function)
-
-		calculateAverageAptitude(aptitudes)
-
-
-		for {
-
-			aptitudes := calculateAptitude(population, function)
-
-			if calculateAverageAptitude(aptitudes) >= 254 {
-				break
-			}
-
-			population = generateOffspring(population, aptitudes)
-			iterations++
-
-		}
-
-	*/
-
 	aptitudes = calculatePathAptitude(cities, distanceFunction)
 
 	average := calculateAverageAptitude(aptitudes)
 
 	fmt.Printf("Average aptitude: %f\n, Iterations: %d\n\n", average, iterations)
 
-	utilities.PrettyPrint(cities)
+	printBestCity(cities, distanceFunction)
 
 }
 
+func printBestCity(cities [][4]int, function func([4]int) float64) {
+	var bestCity = [4]int{}
+	maxAptitude := 0.0
+
+	for i := 0; i < len(cities); i++ {
+		newAptitude := function(cities[i])
+		if newAptitude > maxAptitude {
+			bestCity = cities[i]
+			maxAptitude = newAptitude
+		}
+	}
+
+	fmt.Println("Best City:")
+	fmt.Print(bestCity)
+	fmt.Printf(" %f", maxAptitude)
+}
 func generateInitialCities(popSize int) [][4]int {
 	population := make([][4]int, popSize)
 
@@ -190,17 +173,34 @@ func generateNewPath(population [][4]int, aptitudes []float64) [][4]int {
 	for i, v := range permutation {
 		couples[v] = parents[i]
 	}
-
 	// Make offspring
 	for i := 0; i < len(couples); i += 2 {
 		crossPoint := rand.Intn(len(couples[i]) - 1)
 		coupleChildren := [2][4]int{}
 
+		for j := 0; j < len(couples[i]); j++ {
+			if j <= crossPoint {
+				coupleChildren[0][j] = couples[i][j]
+				coupleChildren[1][j] = couples[i+1][j]
+			} else {
+				for k := 0; k < len(couples[i]); k++ {
+					if !contains(coupleChildren[0], couples[i+1][k]) {
+						coupleChildren[0][j] = couples[i+1][k]
+						break
+					}
+				}
+				for k := 0; k < len(couples[i]); k++ {
+					if !contains(coupleChildren[1], couples[i][k]) {
+						coupleChildren[1][j] = couples[i][k]
+						break
+					}
+				}
+			}
+		}
+
 		children[i] = coupleChildren[0]
 		children[i+1] = coupleChildren[1]
 	}
-
-	fmt.Println(children)
 
 	// Mutate
 	for i := 0; i < len(children); i++ {
@@ -210,6 +210,15 @@ func generateNewPath(population [][4]int, aptitudes []float64) [][4]int {
 	}
 
 	return children
+}
+
+func contains(array [4]int, value int) bool {
+	for i := 0; i < len(array); i++ {
+		if array[i] == value {
+			return true
+		}
+	}
+	return false
 }
 
 func swapRandom(arr [4]int) [4]int {
