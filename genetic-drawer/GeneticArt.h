@@ -13,8 +13,6 @@ using namespace std;
 
 vector<ArtPiece> generateBeautyFromNoise(int populationSize) {
 	vector<ArtPiece> v = {};
-	
-	srand(time(NULL)); // Seed the RNG
 
 	for (int i = 0; i < populationSize; i++) {
 		ArtPiece p{};
@@ -128,4 +126,22 @@ ArtPiece extractOpusMagnum(vector<ArtPiece> population) {
 	}
 
 	return mostFit;
+}
+
+Mat weaveMasterpiece(Mat red, Mat green, Mat blue, bool smoothen) {
+	Mat masterpiece;
+	std::vector<Mat> channels;
+
+	channels.push_back(blue);
+	channels.push_back(green);
+	channels.push_back(red);
+
+
+	merge(channels, masterpiece);
+
+	if (smoothen) {
+		medianBlur(masterpiece, masterpiece, 19);
+	}
+
+	return masterpiece;
 }

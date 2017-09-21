@@ -26,55 +26,70 @@ void drawProgressBar(int progress, int limit) {
 	cout << progressBar << " (" << progress << "/" << limit << ")\r";
 }
 
+long getAverageAptitude(vector<ArtPiece> pop) {
+	long avgAptitude = 0;
+
+	evaluateArtisticAppeal(pop);
+
+	for (ArtPiece p : pop) {
+		avgAptitude += p.aptitude;
+	}
+
+	return avgAptitude / pop.size();
+	
+}
+
 int main(int argc, char** argv) {
 	int populationCount = 50,
 		maxGenerations = 500;
 	if (argc != 3) {
-		cout << "Using default parameters: 50 art pieces with 500 generations" << endl;
+		cout << "Usage: genetic-drawer [populationCount] [generations]" << endl;
+		cout << "Using default parameters: 50 art pieces with 500 generations\n" << endl;
 	} else {
 		populationCount = atoi(argv[1]);
 		maxGenerations = atoi(argv[2]);
 	}
 
-	vector<ArtPiece> population = generateBeautyFromNoise(populationCount);
+	srand(time(NULL)); // Seed the RNG
 
-	Mat initialSample = population[0].toImage();
+	vector<ArtPiece> populationRed = generateBeautyFromNoise(populationCount),
+		populationGreen = generateBeautyFromNoise(populationCount),
+		populationBlue = generateBeautyFromNoise(populationCount);
 
-	evaluateArtisticAppeal(population);
+	Mat initialSampleRed = populationRed[0].toImage(),
+		initialSampleGreen = populationGreen[0].toImage(),
+		initialSampleBlue = populationBlue[0].toImage(),
+		initialSampleComposite = weaveMasterpiece(initialSampleRed, initialSampleGreen, initialSampleBlue, false);
 
-	int avgAptitude = 0;
+	cout << "Initial average aptitude for red layer: " << getAverageAptitude(populationRed) << endl;
+	cout << "Initial average aptitude for green layer: " << getAverageAptitude(populationGreen) << endl;
+	cout << "Initial average aptitude for blue layer: " << getAverageAptitude(populationBlue) << endl;
 
-	for (ArtPiece p : population) {
-		avgAptitude += p.aptitude;
-	}
+	for (int i = 1; i <= maxGenerations; i++) {
+		evaluateArtisticAppeal(populationRed);
+		populationRed = naturallySelectArt(populationRed);
 
-	cout << "Initial average aptitude: " << (avgAptitude / population.size()) << endl;
+		evaluateArtisticAppeal(populationGreen);
+		populationGreen = naturallySelectArt(populationGreen);
 
-	for (int i = 0; i <= maxGenerations; i++) {
-		evaluateArtisticAppeal(population);
-
-		population = naturallySelectArt(population);
-
-		evaluateArtisticAppeal(population);			
-
+		evaluateArtisticAppeal(populationBlue);
+		populationBlue = naturallySelectArt(populationBlue);
+		
 		drawProgressBar(i, maxGenerations);
 	}
 
+	cout << "\nFinal average aptitude for red layer: " << getAverageAptitude(populationRed) << endl;
+	cout << "Final average aptitude for green layer: " << getAverageAptitude(populationGreen) << endl;
+	cout << "Final average aptitude for blue layer: " << getAverageAptitude(populationBlue) << endl;
 
-	evaluateArtisticAppeal(population);
+	ArtPiece redRelic = extractOpusMagnum(populationRed),
+		greenRelic = extractOpusMagnum(populationGreen),
+		blueRelic = extractOpusMagnum(populationBlue);
 
+	Mat masterpiece = weaveMasterpiece(redRelic.toImage(), greenRelic.toImage(), blueRelic.toImage(), true);
 
-	avgAptitude = 0;
-
-	for (ArtPiece p : population) {
-		avgAptitude += p.aptitude;
-	}
-
-	cout << "\nFinal average aptitude: " << (avgAptitude / population.size()) << endl;
-
-	ArtPiece relic = extractOpusMagnum(population);
 	imshow("Ideal", ArtPiece::getIdealImage());
-	imshow("Initial Sample", initialSample);
-	imshow("Opus Magnum", relic.toImage());
+	imshow("Initial Sample", initialSampleComposite);
+	imshow("Opus Magnum", masterpiece);
 	waitKey(0);
 }
