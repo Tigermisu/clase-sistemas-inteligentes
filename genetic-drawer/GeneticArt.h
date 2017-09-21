@@ -1,5 +1,4 @@
 #pragma once
-#include <SFML/Graphics.hpp>
 #include <opencv2/core.hpp>
 #include <iostream>
 #include <stdlib.h>
@@ -7,102 +6,74 @@
 #include <vector>
 #include <time.h>
 
+#include "ArtPiece.h"
+
 using namespace cv;
 using namespace std;
 
-Mat createRandomImage(int height, int width) {
-	/*
-	Mat image(height, width, CV_8UC3);
-
-	for (int i = 0; i < height; i++) {
-		char* row = image.ptr<char>(i);
-		for (int j = 0; j < width * 3; j++)	{
-			row[j] = rand() % 256;
-		}
-	}
-	*/
-
-	Mat image(height, width, CV_8UC3);
-	randu(image, 0, 255);
-
-	return image;
-}
-
-vector<Mat> generateBeautyFromNoise(int populationSize, int imageHeight, int imageWidth) {
-	vector<Mat> v = {};
+vector<ArtPiece> generateBeautyFromNoise(int populationSize) {
+	vector<ArtPiece> v = {};
 	
 	srand(time(NULL)); // Seed the RNG
 
 	for (int i = 0; i < populationSize; i++) {
-		v.push_back(createRandomImage(imageHeight, imageWidth));
+		ArtPiece p{};
+		for (int j = 0; j < p.geneLength; j++) {
+			p.genes[j] = (rand() % 2) == 1 ? true : false;
+		}
+
+		v.push_back(p);
 	}
 
 	return v;
 }
 
-vector<int> evaluateArtisticAppeal(vector<Mat> population) {
-	vector<int> v = {};
+void evaluateArtisticAppeal(vector<ArtPiece> &population) {
+	int dimensions = sqrt(ArtPiece::geneLength),
+		maxDistance = 3 * dimensions / 10;
 
-	for (Mat image: population)	{
-		int aptitude = 0,
-			height = image.size().height,
-			width = image.size().width;
-		for (int i = 0; i < height; i++) {
-			unsigned char* row = image.ptr<unsigned char>(i);
-			/*
-			for (int j = 0; j < width * 3; j += 6) {
-				aptitude += 10000 / (1 + abs(row[j] - row[j + 3]) + abs(row[j + 1] - row[j + 4]) + abs(row[j + 2] - row[j + 5]));
-			}
-			*/
-			for (int j = 0; j < width * 3; j += 3) {
-				aptitude += (row[j] * 2 - (row[j + 2] + row[j + 1])) / 10; // Prefer red pixels
+	for (ArtPiece &p : population) {
+		long aptitude = 1;
+		for (int i = 0; i < p.geneLength; i++) {
+			int row = i / dimensions,
+				col = i % dimensions,
+				distance = sqrt(pow(abs(row - dimensions / 2), 2) + pow(abs(col - dimensions / 2), 2));
+
+			if (distance < maxDistance) {
+				aptitude += (p.genes[i] ? 3 : -2);
+			} else {
+				aptitude += (p.genes[i] ? -3 : 3);
 			}
 		}
-		
-		if (aptitude < 0) aptitude = 1;
-
-		v.push_back(aptitude);
-	}
-
-	return v;
-}
-
-void weaveChildWithEuphoricLove(Mat dad, Mat mom, Mat firstborn, Mat theSecondOne, int row, int col) {
-	unsigned char* dadRow = dad.ptr<unsigned char>(row);
-	unsigned char* momRow = mom.ptr<unsigned char>(row);
-	unsigned char* firstRow = firstborn.ptr<unsigned char>(row);
-	unsigned char* secondRow = theSecondOne.ptr<unsigned char>(row);
-
-	for (int j = col * 3; j < col * 3 + 3; j++) {
-		firstRow[j] = dadRow[j];
-		secondRow[j] = momRow[j];
+		p.aptitude = aptitude;
 	}
 }
 
-vector<Mat> naturallySelectArt(vector<Mat> population, vector<int> aptitudes) {
-	int aptitudeSum = 0,
-		populationSize = population.size(),
-		imageWidth = population[0].cols,
-		imageHeight = population[0].cols,
-		imageSize = imageWidth * imageHeight;
+vector<ArtPiece> naturallySelectArt(vector<ArtPiece> population) {
+	int populationSize = population.size(),
+		geneLength = population[0].geneLength;
 
-	vector<Mat> parents = {};
-	vector<Mat> children = {};
 
-	
-	for (int aptitude : aptitudes) {
-		aptitudeSum += aptitude;
+	long aptitudeSum = 0;
+
+	vector<ArtPiece> parents = {};
+	vector<ArtPiece> children = {};
+
+	// Calculate aptitude sum
+	for (ArtPiece p : population) {
+		aptitudeSum += p.aptitude;
 	}
 
 	// Choose parents
 	for (int i = 0; i < populationSize; i++) {
-		int rouletteNumber = rand() % aptitudeSum,
+		long rouletteNumber = rand() % aptitudeSum,
 			runningSum = 0;
 
-		for (int j = 0; j < populationSize; j++) {
-			runningSum += aptitudes[j];
+		for (ArtPiece p: population) {
+			runningSum += p.aptitude;
 			if (rouletteNumber < runningSum) {
-				parents.push_back(population[j]);
+				parents.push_back(p);
+				break;
 			}
 		}
 	}
@@ -112,16 +83,16 @@ vector<Mat> naturallySelectArt(vector<Mat> population, vector<int> aptitudes) {
 
 	// Make offspring
 	for (int i = 0; i < populationSize; i+=2) {
-		int crossPoint = rand() % imageSize;
-		Mat firstChild(imageHeight, imageWidth, CV_8UC3),
-			secondChild(imageHeight, imageWidth, CV_8UC3);
-		for (int j = 0; j < imageSize; j++) {
-			int row = j / imageWidth,
-				column = j % imageWidth;
-			if (j > crossPoint) {
-				weaveChildWithEuphoricLove(parents[i], parents[i+1], firstChild, secondChild, row, column);
+		int crossPoint = rand() % (geneLength - 1);
+		ArtPiece firstChild{},
+			secondChild{};
+		for (int j = 0; j < geneLength; j+= 1) {
+			if (j <= crossPoint) {
+				firstChild.genes[j] = parents[i].genes[j];
+				secondChild.genes[j] = parents[i + 1].genes[j];
 			} else {
-				weaveChildWithEuphoricLove(parents[i], parents[i+1], secondChild, firstChild, row, column);
+				firstChild.genes[j] = parents[i + 1].genes[j];
+				secondChild.genes[j] = parents[i].genes[j];
 			}
 		}
 
@@ -129,20 +100,30 @@ vector<Mat> naturallySelectArt(vector<Mat> population, vector<int> aptitudes) {
 		children.push_back(secondChild);
 	}
 
-	// There is no mutation in art (yet)
+	// Mutation
+	// Make offspring
+	for (ArtPiece &p: children) {
+		if (rand() % 100 < 5) {
+			int mutatedGenes = rand() % (geneLength / 10);
+			for (int i = 0; i < mutatedGenes; i++) {
+				int rdnGene = rand() % geneLength;
+				p.genes[rdnGene] = !p.genes[rdnGene];
+			}
+		}
+	}
 
 	return children;
 }
 
-Mat extractOpusMagnum(vector<Mat> population) {
-	vector<int> aptitudes = evaluateArtisticAppeal(population);
-	int maxAptitude = INT32_MIN;
-	Mat mostFit;
+ArtPiece extractOpusMagnum(vector<ArtPiece> population) {
+	evaluateArtisticAppeal(population);
+	long maxAptitude = INT32_MIN;
+	ArtPiece mostFit;
 
-	for (int i = 0; i < population.size(); i++) {
-		if (aptitudes[i] > maxAptitude) {
-			maxAptitude = aptitudes[i];
-			mostFit = population[i];
+	for (ArtPiece p : population) {
+		if (p.aptitude > maxAptitude) {
+			maxAptitude = p.aptitude;
+			mostFit = p;
 		}
 	}
 

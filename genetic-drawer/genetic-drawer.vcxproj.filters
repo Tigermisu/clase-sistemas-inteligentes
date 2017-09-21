@@ -23,5 +23,11 @@
     <ClInclude Include="GeneticArt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ArtPiece.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
   </ItemGroup>
 </Project>
