@@ -119,7 +119,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(OPENCV_DIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_calib3d320.lib;opencv_core320.lib;opencv_features2d320.lib;opencv_flann320.lib;opencv_highgui320.lib;opencv_imgcodecs320.lib;opencv_imgproc320.lib;opencv_ml320.lib;opencv_objdetect320.lib;opencv_photo320.lib;opencv_shape320.lib;opencv_stitching320.lib;opencv_superres320.lib;opencv_video320.lib;opencv_videoio320.lib;opencv_videostab320.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_core320.lib;opencv_highgui320.lib;opencv_imgcodecs320.lib;opencv_imgproc320.lib;opencv_videoio320.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -136,7 +136,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(OPENCV_DIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_calib3d320.lib;opencv_core320.lib;opencv_features2d320.lib;opencv_flann320.lib;opencv_highgui320.lib;opencv_imgcodecs320.lib;opencv_imgproc320.lib;opencv_ml320.lib;opencv_objdetect320.lib;opencv_photo320.lib;opencv_shape320.lib;opencv_stitching320.lib;opencv_superres320.lib;opencv_video320.lib;opencv_videoio320.lib;opencv_videostab320.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_core320.lib;opencv_highgui320.lib;opencv_imgcodecs320.lib;opencv_imgproc320.lib;opencv_videoio320.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

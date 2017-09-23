@@ -128,7 +128,7 @@ ArtPiece extractOpusMagnum(vector<ArtPiece> population) {
 	return mostFit;
 }
 
-Mat weaveMasterpiece(Mat red, Mat green, Mat blue, bool smoothen) {
+Mat weaveMasterpiece(Mat red, Mat green, Mat blue, int postProcessingIntensity) {
 	Mat masterpiece;
 	std::vector<Mat> channels;
 
@@ -139,9 +139,66 @@ Mat weaveMasterpiece(Mat red, Mat green, Mat blue, bool smoothen) {
 
 	merge(channels, masterpiece);
 
-	if (smoothen) {
-		medianBlur(masterpiece, masterpiece, 19);
+	if (postProcessingIntensity > 0) {
+		if (postProcessingIntensity > 39) postProcessingIntensity = 39;
+		else if (postProcessingIntensity % 2 == 0) postProcessingIntensity--;
+		medianBlur(masterpiece, masterpiece, postProcessingIntensity);
 	}
 
 	return masterpiece;
+}
+
+vector<ArtPiece> bloodyCombatToDeath(vector<ArtPiece> champions, vector<ArtPiece> challengers) {
+	vector<ArtPiece> contestants, combatants, victors;
+	long aptitudeSum = 0;
+	int combatantsSize = champions.size();
+
+	// Prepare combatants
+	for (int i = 0; i < champions.size(); i++) {
+		contestants.push_back(champions[0]);
+		contestants.push_back(challengers[0]);
+	}
+
+	evaluateArtisticAppeal(contestants);
+
+	for (ArtPiece c : contestants) {
+		aptitudeSum += c.aptitude;
+	}
+
+	// Choose the 'strongest' n combatants out of 2n
+	for (int i = 0; i < combatantsSize; i++) {
+		long rouletteNumber = rand() % aptitudeSum,
+			runningSum = 0;
+
+		for (ArtPiece c : contestants) {
+			runningSum += c.aptitude;
+			if (rouletteNumber < runningSum) {
+				combatants.push_back(c);
+				break;
+			}
+		}
+	}
+
+	// Tournament to death!
+	for (int i = 0; i < combatantsSize; i++) {
+		if (combatants[i].aptitude > combatants[(i + 1) % combatantsSize].aptitude) {
+			victors.push_back(combatants[i]);
+		} else {
+			victors.push_back(combatants[(i + 1) % combatantsSize]);
+		}
+	}
+
+	return victors;
+}
+
+// These are references just to avoid the overhead of making copies of these huge Art Pieces.
+vector<vector<ArtPiece>> introduceDistantWorlds(vector<ArtPiece> &r, vector<ArtPiece> &g, vector<ArtPiece> &b,
+												vector<ArtPiece> &rAlt, vector<ArtPiece> &gAlt, vector<ArtPiece> &bAlt) {
+	vector<vector<ArtPiece>> braveNewWorld;
+
+	braveNewWorld.push_back(bloodyCombatToDeath(b, bAlt));
+	braveNewWorld.push_back(bloodyCombatToDeath(g, gAlt));
+	braveNewWorld.push_back(bloodyCombatToDeath(r, rAlt));
+
+	return braveNewWorld;
 }

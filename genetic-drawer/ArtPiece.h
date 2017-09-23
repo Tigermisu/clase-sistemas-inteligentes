@@ -11,7 +11,7 @@ public:
 	long aptitude;
 	bool genes[geneLength];
 
-	Mat toImage(void);
+	Mat toImage(unsigned char);
 	static Mat getIdealImage(void);
 
 };
@@ -40,14 +40,14 @@ Mat ArtPiece::getIdealImage() {
 	return img;	
 }
 
-Mat ArtPiece::toImage() {
+Mat ArtPiece::toImage(unsigned char colorIntensity) {
 	int dimensions = sqrt(geneLength);
 	Mat img(dimensions, dimensions, CV_8UC1);
 
 	for (int i = 0; i < dimensions; i++) {
 		unsigned char *imgRow = img.ptr<unsigned char>(i);
 		for (int j = 0; j < dimensions; j++) {
-			imgRow[j] = genes[i * dimensions + j] ? 255 : 0;
+			imgRow[j] = genes[i * dimensions + j] ? colorIntensity : 0;
 		}
 	}
 
