@@ -1,5 +1,4 @@
 #include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <iostream>
@@ -41,10 +40,7 @@ void evolveCommunity(vector<ArtPiece> &r, vector<ArtPiece> &g, vector<ArtPiece> 
 	cout << "Initial average aptitude for red layer (" << populationName << "): " << getAverageAptitude(r) << endl;
 	cout << "Initial average aptitude for green layer (" << populationName << "): " << getAverageAptitude(g) << endl;
 	cout << "Initial average aptitude for blue layer (" << populationName << "): " << getAverageAptitude(b) << endl;
-
-
-
-	
+		
 	for (int i = 1; i <= tgtGenerations; i++) {
 		evaluateArtisticAppeal(r);
 		r = naturallySelectArt(r);
